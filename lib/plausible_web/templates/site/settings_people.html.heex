@@ -18,7 +18,7 @@
     <.filter_bar :if={@site_role in [:owner, :admin]} filtering_enabled?={false}>
       <.button_link
         mt?={false}
-        href={Routes.membership_path(@conn, :invite_member_form, @site.domain)}
+        href={PlausibleWeb.URL.site_action_path(@site, "memberships/invite")}
       >
         Invite new guest
       </.button_link>
@@ -66,15 +66,7 @@
                     </.dropdown_item>
                   <% else %>
                     <.dropdown_item
-                      href={
-                        Routes.membership_path(
-                          @conn,
-                          :update_role_by_user,
-                          @site.domain,
-                          membership.user.id,
-                          "editor"
-                        )
-                      }
+                      href={PlausibleWeb.URL.site_action_path(@site, "memberships/u/#{membership.user.id}/role/editor")}
                       method="put"
                       disabled={@site_role not in [:owner, :admin] or membership.role == "editor"}
                     >
@@ -84,15 +76,7 @@
                       </div>
                     </.dropdown_item>
                     <.dropdown_item
-                      href={
-                        Routes.membership_path(
-                          @conn,
-                          :update_role_by_user,
-                          @site.domain,
-                          membership.user.id,
-                          "viewer"
-                        )
-                      }
+                      href={PlausibleWeb.URL.site_action_path(@site, "memberships/u/#{membership.user.id}/role/viewer")}
                       method="put"
                       disabled={@site_role not in [:owner, :admin] or membership.role == "viewer"}
                     >
@@ -103,14 +87,7 @@
                     </.dropdown_item>
                     <.dropdown_divider />
                     <.dropdown_item
-                      href={
-                        Routes.membership_path(
-                          @conn,
-                          :remove_member_by_user,
-                          @site.domain,
-                          membership.user.id
-                        )
-                      }
+                      href={PlausibleWeb.URL.site_action_path(@site, "memberships/u/#{membership.user.id}")}
                       class="!text-red-600 hover:text-red-600 dark:!text-red-500 dark:hover:!text-red-400"
                       method="delete"
                       disabled={@site_role not in [:owner, :admin]}

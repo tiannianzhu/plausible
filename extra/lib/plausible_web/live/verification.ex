@@ -14,6 +14,19 @@ defmodule PlausibleWeb.Live.Verification do
   @slowdown_for_frequent_checking :timer.seconds(5)
 
   def mount(
+        %{"site_id" => site_id} = params,
+        session,
+        socket
+      ) do
+    domain = Plausible.Sites.get_by_id!(site_id).domain
+
+    params
+    |> Map.delete("site_id")
+    |> Map.put("domain", domain)
+    |> mount(session, socket)
+  end
+
+  def mount(
         %{"domain" => domain} = params,
         _session,
         socket
@@ -73,6 +86,7 @@ defmodule PlausibleWeb.Live.Verification do
     <.live_component
       :if={not @custom_url_input?}
       module={@component}
+      site={@site}
       installation_type={@installation_type}
       domain={@domain}
       id="verification-standalone"

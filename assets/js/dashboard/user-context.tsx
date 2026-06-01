@@ -15,20 +15,29 @@ const userContextDefaultValue = {
   role: Role.public,
   team: {
     identifier: null,
-    hasConsolidatedView: false
+    hasConsolidatedView: false,
+    consolidatedViewSiteId: null
   }
 } as
   | {
       loggedIn: false
       id: null
       role: Role
-      team: { identifier: null; hasConsolidatedView: false }
+      team: {
+        identifier: null
+        hasConsolidatedView: false
+        consolidatedViewSiteId: null
+      }
     }
   | {
       loggedIn: true
       id: number
       role: Role
-      team: { identifier: string | null; hasConsolidatedView: boolean }
+      team: {
+        identifier: string | null
+        hasConsolidatedView: boolean
+        consolidatedViewSiteId: number | null
+      }
     }
 
 export type UserContextValue = typeof userContextDefaultValue

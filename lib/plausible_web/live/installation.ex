@@ -87,6 +87,19 @@ defmodule PlausibleWeb.Live.Installation do
      )}
   end
 
+  def mount(
+        %{"site_id" => site_id} = params,
+        session,
+        socket
+      ) do
+    domain = Plausible.Sites.get_by_id!(site_id).domain
+
+    params
+    |> Map.delete("site_id")
+    |> Map.put("domain", domain)
+    |> mount(session, socket)
+  end
+
   def handle_params(params, _url, socket) do
     socket =
       if connected?(socket) && socket.assigns.recommended_installation_type.result &&
@@ -327,7 +340,7 @@ defmodule PlausibleWeb.Live.Installation do
     {:noreply,
      push_navigate(socket,
        to:
-         Routes.site_path(socket, :verification, socket.assigns.site.domain,
+         PlausibleWeb.URL.site_path(socket.assigns.site, "verification",
            flow: socket.assigns.flow,
            installation_type: config.installation_type
          )

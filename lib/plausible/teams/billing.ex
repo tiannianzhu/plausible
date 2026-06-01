@@ -488,7 +488,7 @@ defmodule Plausible.Teams.Billing do
         Repo.all(
           from(s in Plausible.Site,
             where: s.id in ^owned_site_ids,
-            select: {s.id, s.domain}
+            select: {s.id, %{id: s.id, domain: s.domain}}
           )
         )
       )
@@ -503,7 +503,8 @@ defmodule Plausible.Teams.Billing do
       custom_events = usage_mapping[site_id][:custom_events] || 0
 
       %{
-        domain: Map.get(domains, site_id),
+        id: site_id,
+        domain: domains[site_id].domain,
         pageviews: pageviews,
         custom_events: custom_events,
         total: pageviews + custom_events

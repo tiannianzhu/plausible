@@ -37,7 +37,7 @@
             </p>
             <p class="mt-4 text-sm text-gray-600 dark:text-gray-300">
               You can configure your
-              <.styled_link href={Routes.site_path(@conn, :settings_general, @site.domain)}>
+              <.styled_link href={PlausibleWeb.URL.site_path(@site, "settings/general")}>
                 site settings
               </.styled_link>
               but your access to the dashboard is restricted.

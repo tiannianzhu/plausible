@@ -68,6 +68,8 @@ defmodule PlausibleWeb.StatsController do
     consolidated_view_available? =
       on_ee(do: Plausible.ConsolidatedView.ok_to_display?(site.team), else: false)
 
+    consolidated_view_site_id = consolidated_view_site_id(site.team, consolidated_view_available?)
+
     team_identifier = site.team.identifier
 
     skip_to_dashboard? =
@@ -106,11 +108,12 @@ defmodule PlausibleWeb.StatsController do
           exploration_journey_end_event: exploration_journey_end_event,
           exploration_max_journey_steps: exploration_max_journey_steps,
           team_identifier: team_identifier,
+          consolidated_view_site_id: consolidated_view_site_id,
           limited_to_segment_id: nil
         )
 
       !stats_start_date && can_see_stats? ->
-        redirect(conn, to: Routes.site_path(conn, :verification, site.domain))
+        redirect(conn, to: PlausibleWeb.URL.site_path(site, "verification"))
 
       Teams.locked?(site.team) ->
         site = Plausible.Repo.preload(site, :owners)
@@ -422,6 +425,7 @@ defmodule PlausibleWeb.StatsController do
           exploration_journey_end_event: exploration_journey_end_event,
           exploration_max_journey_steps: exploration_max_journey_steps,
           team_identifier: team_identifier,
+          consolidated_view_site_id: nil,
           limited_to_segment_id: limited_to_segment_id
         )
     end
@@ -439,6 +443,19 @@ defmodule PlausibleWeb.StatsController do
         {flag, FunWithFlags.enabled?(flag, for: user) || FunWithFlags.enabled?(flag, for: site)}
       end)
       |> Map.new()
+
+  defp consolidated_view_site_id(team, available?) do
+    on_ee do
+      if available? do
+        case Plausible.ConsolidatedView.get(team) do
+          nil -> nil
+          consolidated_view -> consolidated_view.id
+        end
+      end
+    else
+      nil
+    end
+  end
 
   defp dbip?() do
     on_ee do

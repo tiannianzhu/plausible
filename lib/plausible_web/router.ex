@@ -3,13 +3,22 @@ defmodule PlausibleWeb.Router do
   use Plausible
   import Phoenix.LiveView.Router
 
+  def first_launch_register_path(conn) do
+    PlausibleWeb.Router.Helpers.auth_path(conn, :register_form)
+  end
+
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
     plug :fetch_live_flash
     plug :put_secure_browser_headers
     plug PlausibleWeb.Plugs.NoRobots
-    on_ee(do: nil, else: plug(PlausibleWeb.FirstLaunchPlug, redirect_to: "/register"))
+    on_ee(
+      do: nil,
+      else: plug(PlausibleWeb.FirstLaunchPlug,
+              redirect_to: &__MODULE__.first_launch_register_path/1
+            )
+    )
     plug PlausibleWeb.AuthPlug
     on_ee(do: plug(Plausible.Plugs.HandleExpiredSession))
     on_ee(do: plug(Plausible.Plugs.SSOTeamAccess))
@@ -24,7 +33,12 @@ defmodule PlausibleWeb.Router do
       plug :fetch_live_flash
       plug :put_secure_browser_headers
       plug PlausibleWeb.Plugs.NoRobots
-      on_ee(do: nil, else: plug(PlausibleWeb.FirstLaunchPlug, redirect_to: "/register"))
+      on_ee(
+        do: nil,
+        else: plug(PlausibleWeb.FirstLaunchPlug,
+                redirect_to: &__MODULE__.first_launch_register_path/1
+              )
+      )
       plug PlausibleWeb.AuthPlug
       on_ee(do: plug(Plausible.Plugs.HandleExpiredSession))
       plug PlausibleWeb.Plugs.UserSessionTouch
@@ -274,29 +288,58 @@ defmodule PlausibleWeb.Router do
     scope "/stats", PlausibleWeb.Api do
       on_ee do
         get "/:domain/funnels/:id", StatsController, :funnel
+        get "/s/:site_id/funnels/:id", StatsController, :funnel
 
         post "/:domain/exploration/next", StatsController, :exploration_next
+        post "/s/:site_id/exploration/next", StatsController, :exploration_next
         post "/:domain/exploration/funnel", StatsController, :exploration_funnel
+        post "/s/:site_id/exploration/funnel", StatsController, :exploration_funnel
 
         post "/:domain/exploration/next-with-funnel",
              StatsController,
              :exploration_next_with_funnel
+        post "/s/:site_id/exploration/next-with-funnel",
+             StatsController,
+             :exploration_next_with_funnel
+
+        post "/:domain/exploration/interesting-funnel",
+             StatsController,
+             :exploration_interesting_funnel
+        post "/s/:site_id/exploration/interesting-funnel",
+             StatsController,
+             :exploration_interesting_funnel
       end
 
       scope private: %{allow_consolidated_views: true} do
         post "/:domain/query", StatsController, :query
+        post "/s/:site_id/query", StatsController, :query
         post "/:domain/export", StatsController, :csv_export
+        post "/s/:site_id/export", StatsController, :csv_export
         get "/:domain/google-search-terms", StatsController, :google_search_terms
+        get "/s/:site_id/google-search-terms", StatsController, :google_search_terms
         get "/:domain/current-visitors", StatsController, :current_visitors
+        get "/s/:site_id/current-visitors", StatsController, :current_visitors
         get "/:domain/suggestions/:filter_name", StatsController, :filter_suggestions
+        get "/s/:site_id/suggestions/:filter_name", StatsController, :filter_suggestions
 
         get "/:domain/suggestions/custom-prop-values/:prop_key",
+            StatsController,
+            :custom_prop_value_filter_suggestions
+        get "/s/:site_id/suggestions/custom-prop-values/:prop_key",
             StatsController,
             :custom_prop_value_filter_suggestions
       end
     end
 
     scope "/:domain/segments", PlausibleWeb.Api.Internal,
+      private: %{allow_consolidated_views: true} do
+      post "/", SegmentsController, :create
+      patch "/:segment_id", SegmentsController, :update
+      delete "/:segment_id", SegmentsController, :delete
+      get "/:segment_id/shared-links", SegmentsController, :get_related_shared_links
+    end
+
+    scope "/s/:site_id/segments", PlausibleWeb.Api.Internal,
       private: %{allow_consolidated_views: true} do
       post "/", SegmentsController, :create
       patch "/:segment_id", SegmentsController, :update
@@ -410,7 +453,7 @@ defmodule PlausibleWeb.Router do
       post "/paddle/webhook", Api.PaddleController, :webhook
       get "/paddle/currency", Api.PaddleController, :currency
 
-      put "/:domain/disable-feature", Api.InternalController, :disable_feature
+      put "/s/:site_id/disable-feature", Api.InternalController, :disable_feature
 
       get "/sites", Api.InternalController, :sites
     end
@@ -577,21 +620,30 @@ defmodule PlausibleWeb.Router do
     post "/sites", SiteController, :create_site
     post "/sites/:domain/make-public", SiteController, :make_public
     post "/sites/:domain/make-private", SiteController, :make_private
+    post "/sites/s/:site_id/make-public", SiteController, :make_public
+    post "/sites/s/:site_id/make-private", SiteController, :make_private
 
     get "/sites/:domain/memberships/invite", Site.MembershipController, :invite_member_form
     post "/sites/:domain/memberships/invite", Site.MembershipController, :invite_member
+    get "/sites/s/:site_id/memberships/invite", Site.MembershipController, :invite_member_form
+    post "/sites/s/:site_id/memberships/invite", Site.MembershipController, :invite_member
 
     post "/sites/invitations/:invitation_id/accept", InvitationController, :accept_invitation
 
     post "/sites/invitations/:invitation_id/reject", InvitationController, :reject_invitation
 
     delete "/sites/:domain/invitations/:invitation_id", InvitationController, :remove_invitation
+    delete "/sites/s/:site_id/invitations/:invitation_id", InvitationController, :remove_invitation
 
     put "/sites/:domain/memberships/u/:id/role/:new_role",
         Site.MembershipController,
         :update_role_by_user
+    put "/sites/s/:site_id/memberships/u/:id/role/:new_role",
+        Site.MembershipController,
+        :update_role_by_user
 
     delete "/sites/:domain/memberships/u/:id", Site.MembershipController, :remove_member_by_user
+    delete "/sites/s/:site_id/memberships/u/:id", Site.MembershipController, :remove_member_by_user
 
     scope alias: Live, assigns: %{connect_live_socket: true} do
       pipe_through [:app_layout, PlausibleWeb.RequireAccountPlug]
@@ -600,12 +652,17 @@ defmodule PlausibleWeb.Router do
               dogfood_page_path: "/:website/installation"
             } do
         live "/:domain/installation", Installation, :installation, as: :site
+        live "/s/:site_id/installation", Installation, :installation, as: :site
       end
 
       scope assigns: %{
               dogfood_page_path: "/:website/verification"
             } do
         live "/:domain/verification",
+             on_ee(do: Verification, else: AwaitingPageviews),
+             :verification,
+             as: :site
+        live "/s/:site_id/verification",
              on_ee(do: Verification, else: AwaitingPageviews),
              :verification,
              as: :site
@@ -616,43 +673,69 @@ defmodule PlausibleWeb.Router do
             } do
         live "/:domain/change-domain", ChangeDomain, :change_domain, as: :site
         live "/:domain/change-domain/success", ChangeDomain, :success, as: :site
+        live "/s/:site_id/change-domain", ChangeDomain, :change_domain, as: :site
+        live "/s/:site_id/change-domain/success", ChangeDomain, :success, as: :site
       end
     end
 
     get "/:domain/settings/people", SiteController, :settings_people
     get "/:domain/settings/visibility", SiteController, :settings_visibility
+    get "/s/:site_id/settings/people", SiteController, :settings_people
+    get "/s/:site_id/settings/visibility", SiteController, :settings_visibility
 
     on_ee do
       get "/:domain/settings/funnels", SiteController, :settings_funnels
+      get "/s/:site_id/settings/funnels", SiteController, :settings_funnels
     end
 
     get "/:domain/settings/danger-zone", SiteController, :settings_danger_zone
     get "/:domain/settings/integrations", SiteController, :settings_integrations
     get "/:domain/settings/shields/:shield", SiteController, :settings_shields
     get "/:domain/settings/imports-exports", SiteController, :settings_imports_exports
+    get "/s/:site_id/settings/danger-zone", SiteController, :settings_danger_zone
+    get "/s/:site_id/settings/integrations", SiteController, :settings_integrations
+    get "/s/:site_id/settings/shields/:shield", SiteController, :settings_shields
+    get "/s/:site_id/settings/imports-exports", SiteController, :settings_imports_exports
 
     put "/:domain/settings/google", SiteController, :update_google_auth
     delete "/:domain/settings/google-search", SiteController, :delete_google_auth
     delete "/:domain/settings/google-import", SiteController, :delete_google_auth
     delete "/:domain", SiteController, :delete_site
     delete "/:domain/stats", SiteController, :reset_stats
+    put "/s/:site_id/settings/google", SiteController, :update_google_auth
+    delete "/s/:site_id/settings/google-search", SiteController, :delete_google_auth
+    delete "/s/:site_id/settings/google-import", SiteController, :delete_google_auth
+    delete "/s/:site_id", SiteController, :delete_site
+    delete "/s/:site_id/stats", SiteController, :reset_stats
 
     get "/:domain/import/google-analytics/property",
+        GoogleAnalyticsController,
+        :property_form
+    get "/s/:site_id/import/google-analytics/property",
         GoogleAnalyticsController,
         :property_form
 
     post "/:domain/import/google-analytics/property",
          GoogleAnalyticsController,
          :property
+    post "/s/:site_id/import/google-analytics/property",
+         GoogleAnalyticsController,
+         :property
 
     get "/:domain/import/google-analytics/confirm", GoogleAnalyticsController, :confirm
     post "/:domain/settings/google-import", GoogleAnalyticsController, :import
+    get "/s/:site_id/import/google-analytics/confirm", GoogleAnalyticsController, :confirm
+    post "/s/:site_id/settings/google-import", GoogleAnalyticsController, :import
 
     delete "/:domain/settings/forget-imported", SiteController, :forget_imported
     delete "/:domain/settings/forget-import/:import_id", SiteController, :forget_import
+    delete "/s/:site_id/settings/forget-imported", SiteController, :forget_imported
+    delete "/s/:site_id/settings/forget-import/:import_id", SiteController, :forget_import
 
     get "/:domain/download/export", SiteController, :download_export
     get "/:domain/settings/import", SiteController, :csv_import
+    get "/s/:site_id/download/export", SiteController, :download_export
+    get "/s/:site_id/settings/import", SiteController, :csv_import
 
     get "/debug/clickhouse", DebugController, :clickhouse
 
@@ -660,53 +743,92 @@ defmodule PlausibleWeb.Router do
       post "/sites/:domain/weekly-report/enable", SiteController, :enable_weekly_report
       post "/sites/:domain/weekly-report/disable", SiteController, :disable_weekly_report
       post "/sites/:domain/weekly-report/recipients", SiteController, :add_weekly_report_recipient
+      post "/sites/s/:site_id/weekly-report/enable", SiteController, :enable_weekly_report
+      post "/sites/s/:site_id/weekly-report/disable", SiteController, :disable_weekly_report
+      post "/sites/s/:site_id/weekly-report/recipients", SiteController, :add_weekly_report_recipient
 
       delete "/sites/:domain/weekly-report/recipients/:recipient",
+             SiteController,
+             :remove_weekly_report_recipient
+      delete "/sites/s/:site_id/weekly-report/recipients/:recipient",
              SiteController,
              :remove_weekly_report_recipient
 
       post "/sites/:domain/monthly-report/enable", SiteController, :enable_monthly_report
       post "/sites/:domain/monthly-report/disable", SiteController, :disable_monthly_report
+      post "/sites/s/:site_id/monthly-report/enable", SiteController, :enable_monthly_report
+      post "/sites/s/:site_id/monthly-report/disable", SiteController, :disable_monthly_report
 
       post "/sites/:domain/monthly-report/recipients",
+           SiteController,
+           :add_monthly_report_recipient
+      post "/sites/s/:site_id/monthly-report/recipients",
            SiteController,
            :add_monthly_report_recipient
 
       delete "/sites/:domain/monthly-report/recipients/:recipient",
              SiteController,
              :remove_monthly_report_recipient
+      delete "/sites/s/:site_id/monthly-report/recipients/:recipient",
+             SiteController,
+             :remove_monthly_report_recipient
 
       post "/sites/:domain/traffic-change-notification/:type/enable",
+           SiteController,
+           :enable_traffic_change_notification
+      post "/sites/s/:site_id/traffic-change-notification/:type/enable",
            SiteController,
            :enable_traffic_change_notification
 
       post "/sites/:domain/traffic-change-notification/:type/disable",
            SiteController,
            :disable_traffic_change_notification
+      post "/sites/s/:site_id/traffic-change-notification/:type/disable",
+           SiteController,
+           :disable_traffic_change_notification
 
       put "/sites/:domain/traffic-change-notification/:type",
+          SiteController,
+          :update_traffic_change_notification
+      put "/sites/s/:site_id/traffic-change-notification/:type",
           SiteController,
           :update_traffic_change_notification
 
       post "/sites/:domain/traffic-change-notification/:type/recipients",
            SiteController,
            :add_traffic_change_notification_recipient
+      post "/sites/s/:site_id/traffic-change-notification/:type/recipients",
+           SiteController,
+           :add_traffic_change_notification_recipient
 
       delete "/sites/:domain/traffic-change-notification/:type/recipients/:recipient",
+             SiteController,
+             :remove_traffic_change_notification_recipient
+      delete "/sites/s/:site_id/traffic-change-notification/:type/recipients/:recipient",
              SiteController,
              :remove_traffic_change_notification_recipient
 
       get "/sites/:domain/weekly-report/unsubscribe", UnsubscribeController, :weekly_report
       get "/sites/:domain/monthly-report/unsubscribe", UnsubscribeController, :monthly_report
+      get "/sites/s/:site_id/weekly-report/unsubscribe", UnsubscribeController, :weekly_report
+      get "/sites/s/:site_id/monthly-report/unsubscribe", UnsubscribeController, :monthly_report
 
       get "/:domain/settings", SiteController, :settings
       get "/:domain/settings/general", SiteController, :settings_general
       get "/:domain/settings/goals", SiteController, :settings_goals
       get "/:domain/settings/properties", SiteController, :settings_props
       get "/:domain/settings/email-reports", SiteController, :settings_email_reports
+      get "/s/:site_id/settings", SiteController, :settings
+      get "/s/:site_id/settings/general", SiteController, :settings_general
+      get "/s/:site_id/settings/goals", SiteController, :settings_goals
+      get "/s/:site_id/settings/properties", SiteController, :settings_props
+      get "/s/:site_id/settings/email-reports", SiteController, :settings_email_reports
 
       put "/:domain/settings", SiteController, :update_settings
+      put "/s/:site_id/settings", SiteController, :update_settings
 
+      get "/s/:site_id", StatsController, :stats
+      get "/s/:site_id/*path", StatsController, :stats
       get "/:domain", StatsController, :stats
       get "/:domain/*path", StatsController, :stats
     end

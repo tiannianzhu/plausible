@@ -8,7 +8,7 @@
     </:subtitle>
     <.input name="domain" label="Domain" value={@site.domain} disabled width="w-1/2" mt?={false} />
 
-    <.button_link href={Routes.site_path(@conn, :change_domain, @site.domain)}>
+    <.button_link href={PlausibleWeb.URL.site_path(@site, "change-domain")}>
       Change domain
     </.button_link>
   </.tile>
@@ -16,7 +16,7 @@
   <.tile docs="general">
     <:title>Site timezone</:title>
     <:subtitle>Update your reporting timezone.</:subtitle>
-    <.form :let={f} for={@changeset} action={"/#{URI.encode_www_form(@site.domain)}/settings"}>
+    <.form :let={f} for={@changeset} action={PlausibleWeb.URL.site_path(@site, "settings")}>
       <.input
         field={f[:timezone]}
         label="Reporting timezone"
@@ -37,7 +37,7 @@
     </:subtitle>
     <.button_link
       href={
-        Routes.site_path(@conn, :installation, @site.domain, flow: PlausibleWeb.Flows.review())
+        PlausibleWeb.URL.site_path(@site, "installation", flow: PlausibleWeb.Flows.review())
       }
       mt?={false}
     >

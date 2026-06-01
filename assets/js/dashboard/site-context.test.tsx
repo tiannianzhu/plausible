@@ -8,6 +8,7 @@ describe('parseSiteFromDataset', () => {
   }: HTMLAttributes<HTMLDivElement>) => (
     <div
       data-testid="stats-react-container"
+      data-site-id="4"
       data-domain="dummy.site/nice"
       data-offset="20700"
       data-has-goals="true"
@@ -39,6 +40,7 @@ describe('parseSiteFromDataset', () => {
     />
   )
   const expectedParsedSite: PlausibleSite = {
+    id: 4,
     domain: 'dummy.site/nice',
     offset: 20700,
     hasGoals: true,

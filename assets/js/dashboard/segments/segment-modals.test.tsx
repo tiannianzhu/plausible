@@ -55,7 +55,11 @@ describe('Segment details modal - errors', () => {
         loggedIn: true,
         id: 1,
         role: Role.owner,
-        team: { identifier: null, hasConsolidatedView: false }
+        team: {
+          identifier: null,
+          hasConsolidatedView: false,
+          consolidatedViewSiteId: null
+        }
       },
       message: `Segment not found with with ID "202020"`,
       siteOptions: { siteSegmentsAvailable: true }
@@ -92,7 +96,11 @@ describe('Segment details modal - other cases', () => {
         loggedIn: true,
         role: Role.editor,
         id: 1,
-        team: { identifier: null, hasConsolidatedView: false }
+        team: {
+          identifier: null,
+          hasConsolidatedView: false,
+          consolidatedViewSiteId: null
+        }
       }
       const anySegment: SavedSegment & { segment_data: SegmentData } = {
         id: 100,
@@ -146,7 +154,11 @@ describe('Segment details modal - other cases', () => {
         loggedIn: false,
         role: Role.public,
         id: null,
-        team: { identifier: null, hasConsolidatedView: false }
+        team: {
+          identifier: null,
+          hasConsolidatedView: false,
+          consolidatedViewSiteId: null
+        }
       }
       const anySegment: SavedSegment & { segment_data: SegmentData } = {
         id: 100,
@@ -194,7 +206,11 @@ describe('Segment details modal - other cases', () => {
       loggedIn: true,
       role: Role.owner,
       id: 1,
-      team: { identifier: null, hasConsolidatedView: false }
+      team: {
+        identifier: null,
+        hasConsolidatedView: false,
+        consolidatedViewSiteId: null
+      }
     }
     const anySegment: SavedSegmentPublic & { segment_data: SegmentData } = {
       id: 100,
@@ -242,7 +258,11 @@ describe('Segment details modal - other cases', () => {
       loggedIn: false,
       role: Role.public,
       id: null,
-      team: { identifier: null, hasConsolidatedView: false }
+      team: {
+        identifier: null,
+        hasConsolidatedView: false,
+        consolidatedViewSiteId: null
+      }
     }
     const anySegment: SavedSegmentPublic & { segment_data: SegmentData } = {
       id: 100,

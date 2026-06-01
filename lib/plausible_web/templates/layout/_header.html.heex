@@ -16,7 +16,7 @@
               }>
                 <.styled_link
                   class="text-sm font-medium"
-                  href={"/cs/sites/site/#{@conn.assigns.site.id}"}
+                  href={base_path() <> "/cs/sites/site/#{@conn.assigns.site.id}"}
                   new_tab={true}
                 >
                   CS
@@ -124,7 +124,7 @@
                     >
                       Github repo
                     </.dropdown_item>
-                    <.dropdown_item href="/logout">Log out</.dropdown_item>
+                    <.dropdown_item href={Routes.auth_path(@conn, :logout)}>Log out</.dropdown_item>
                   </:menu>
                 </.dropdown>
               </li>
@@ -137,7 +137,7 @@
               <li>
                 <div class="inline-flex">
                   <a
-                    href="/login"
+                    href={Routes.auth_path(@conn, :login_form)}
                     class="font-medium text-gray-500 dark:text-gray-200 hover:text-gray-900 dark:hover:text-gray-100 focus:outline-hidden focus:text-gray-900 transition duration-150 ease-in-out"
                   >
                     Login
@@ -150,7 +150,7 @@
               <li>
                 <div class="inline-flex">
                   <a
-                    href="/login"
+                    href={Routes.auth_path(@conn, :login_form)}
                     class="font-medium text-gray-500 dark:text-gray-200 hover:text-gray-900 dark:hover:text-gray-100 focus:outline-hidden focus:text-gray-900 transition duration-150 ease-in-out"
                   >
                     Login
@@ -158,7 +158,7 @@
                 </div>
                 <div class="inline-flex ml-6 rounded-sm shadow-sm">
                   <a
-                    href="/register"
+                    href={Routes.auth_path(@conn, :register_form)}
                     class="inline-flex items-center justify-center px-5 py-2 text-base font-medium text-white bg-indigo-600 border border-transparent leading-6 rounded-md hover:bg-indigo-500 focus:outline-hidden focus:ring transition duration-150 ease-in-out"
                   >
                     Sign up

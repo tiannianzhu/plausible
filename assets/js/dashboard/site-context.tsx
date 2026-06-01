@@ -2,6 +2,7 @@ import React, { createContext, ReactNode, useContext } from 'react'
 
 export function parseSiteFromDataset(dataset: DOMStringMap): PlausibleSite {
   return {
+    id: parseInt(dataset.siteId || '0', 10),
     domain: dataset.domain!,
     offset: parseInt(dataset.offset!, 10),
     hasGoals: dataset.hasGoals === 'true',
@@ -36,6 +37,7 @@ export function parseSiteFromDataset(dataset: DOMStringMap): PlausibleSite {
 type FeatureFlags = Record<never, boolean>
 
 export const siteContextDefaultValue = {
+  id: 0,
   domain: '',
   /** offset in seconds from UTC at site load time, @example 7200 */
   offset: 0,

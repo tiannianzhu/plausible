@@ -5,6 +5,16 @@ defmodule PlausibleWeb.StatsControllerTest do
   @react_container "div#stats-react-container"
 
   describe "GET /:domain - anonymous user" do
+    test "public site - serves dashboard deep links using site id", %{conn: conn} do
+      site = new_site(public: true)
+      populate_stats(site, [build(:pageview)])
+
+      resp = conn |> get("/s/#{site.id}/sources") |> html_response(200)
+
+      assert element_exists?(resp, @react_container)
+      assert text_of_attr(resp, @react_container, "data-site-id") == "#{site.id}"
+    end
+
     test "public site - shows site stats", %{conn: conn} do
       site = new_site(public: true)
       populate_stats(site, [build(:pageview)])
@@ -13,6 +23,7 @@ defmodule PlausibleWeb.StatsControllerTest do
       resp = html_response(conn, 200)
       assert element_exists?(resp, @react_container)
 
+      assert text_of_attr(resp, @react_container, "data-site-id") == "#{site.id}"
       assert text_of_attr(resp, @react_container, "data-domain") == site.domain
       assert text_of_attr(resp, @react_container, "data-is-dbip") == "false"
       assert text_of_attr(resp, @react_container, "data-has-goals") == "false"

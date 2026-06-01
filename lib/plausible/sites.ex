@@ -10,6 +10,8 @@ defmodule Plausible.Sites do
   alias Plausible.Billing.Feature.SharedLinks
   alias Plausible.Site.SharedLink
 
+  @max_bigint 9_223_372_036_854_775_807
+
   require Plausible.Site.UserPreference
 
   on_ee do
@@ -84,6 +86,26 @@ defmodule Plausible.Sites do
     else
       Repo.get_by!(Site.regular(), domain: domain)
     end
+  end
+
+  def get_by_id(id, opts \\ [])
+
+  def get_by_id(id, opts) when is_binary(id) do
+    case Integer.parse(id) do
+      {id, ""} when id > 0 and id <= @max_bigint -> get_by_id(id, opts)
+      _ -> nil
+    end
+  end
+
+  def get_by_id(id, opts) when is_integer(id) and id > 0 and id <= @max_bigint do
+    queryable = if opts[:include_consolidated?], do: Site, else: Site.regular()
+    Repo.get(queryable, id)
+  end
+
+  def get_by_id(_id, _opts), do: nil
+
+  def get_by_id!(id, opts \\ []) do
+    get_by_id(id, opts) || raise Ecto.NoResultsError, queryable: Site
   end
 
   @spec toggle_pin(Auth.User.t(), Site.t()) ::
@@ -466,7 +488,7 @@ defmodule Plausible.Sites do
   end
 
   def shared_link_url(site, link) do
-    base = PlausibleWeb.Endpoint.url()
+    base = PlausibleWeb.URL.base_url()
     domain = "/share/#{URI.encode_www_form(site.domain)}"
     base <> domain <> "?auth=" <> link.slug
   end

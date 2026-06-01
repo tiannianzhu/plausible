@@ -165,7 +165,7 @@ defmodule PlausibleWeb.Live.Sites do
 
           <.button_link
             :if={!@consolidated_view_cta_dismissed?}
-            href={"/sites/new?flow=#{PlausibleWeb.Flows.provisioning()}"}
+            href={Routes.site_path(@socket, :new, flow: PlausibleWeb.Flows.provisioning())}
             mt?={false}
           >
             <Heroicons.plus class="size-4" /> Add website
@@ -197,7 +197,7 @@ defmodule PlausibleWeb.Live.Sites do
         </p>
         <div class="flex flex-col sm:flex-row gap-3 mt-6">
           <.button_link
-            href={"/sites/new?flow=#{PlausibleWeb.Flows.provisioning()}"}
+            href={Routes.site_path(@socket, :new, flow: PlausibleWeb.Flows.provisioning())}
             theme="primary"
             mt?={false}
           >
@@ -436,7 +436,7 @@ defmodule PlausibleWeb.Live.Sites do
       class="relative row-span-2"
     >
       <.unstyled_link
-        href={Routes.stats_path(PlausibleWeb.Endpoint, :stats, @consolidated_view.domain, [])}
+        href={PlausibleWeb.URL.site_path(@consolidated_view)}
         class="flex flex-col justify-between gap-6 h-full bg-white p-6 dark:bg-gray-900 rounded-md shadow-sm cursor-pointer hover:shadow-md transition-shadow duration-150"
       >
         <div class="flex flex-col flex-1 justify-between gap-y-5">
@@ -552,7 +552,7 @@ defmodule PlausibleWeb.Live.Sites do
       }
     >
       <.unstyled_link
-        href={Routes.stats_path(PlausibleWeb.Endpoint, :stats, @site.domain, [])}
+        href={PlausibleWeb.URL.site_path(@site)}
         class="block group-has-[.phx-click-loading]/sort:animate-pulse group-has-[.phx-click-loading]/sort:pointer-events-none"
       >
         <div class="col-span-1 flex flex-col gap-y-5 bg-white dark:bg-gray-900 rounded-md shadow-sm p-6 group-hover:shadow-lg cursor-pointer transition duration-100">
@@ -620,7 +620,7 @@ defmodule PlausibleWeb.Live.Sites do
             :if={@can_manage?}
             id={"#{@dropdown_id}-item-1"}
             as={&link/1}
-            href={Routes.site_path(PlausibleWeb.Endpoint, :settings_general, @site.domain)}
+            href={PlausibleWeb.URL.site_path(@site, "settings/general")}
           >
             <Heroicons.cog_6_tooth class={PrimaDropdown.dropdown_item_icon_class()} /> Settings
           </PrimaDropdown.dropdown_item>
@@ -789,7 +789,8 @@ defmodule PlausibleWeb.Live.Sites do
   end
 
   def favicon(assigns) do
-    src = "/favicon/sources/#{assigns.domain}"
+    src = PlausibleWeb.URL.path("favicon/sources/#{assigns.domain}")
+
     assigns = assign(assigns, :src, src)
 
     ~H"""

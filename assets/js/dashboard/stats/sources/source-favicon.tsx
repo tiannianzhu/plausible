@@ -1,5 +1,6 @@
 import React from 'react'
 import classNames from 'classnames'
+import { withBasePath } from '../../../base-path'
 
 interface SourceFaviconProps {
   name: string
@@ -14,7 +15,7 @@ export const SourceFavicon = ({ name, className }: SourceFaviconProps) => {
   return (
     <img
       alt=""
-      src={`/favicon/sources/${encodeURIComponent(name)}`}
+      src={withBasePath(`/favicon/sources/${encodeURIComponent(name)}`)}
       referrerPolicy="no-referrer"
       className={classNames(
         className,

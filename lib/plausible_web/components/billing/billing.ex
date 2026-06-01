@@ -54,7 +54,7 @@ defmodule PlausibleWeb.Components.Billing do
 
   attr :usage, :map, required: true
   attr :limit, :any, required: true
-  attr :total_pageview_usage_domain, :string, default: nil
+  attr :total_pageview_usage_site, :map, default: nil
 
   def render_monthly_pageview_usage(%{usage: usage} = assigns)
       when is_map_key(usage, :last_30_days) do
@@ -64,7 +64,7 @@ defmodule PlausibleWeb.Components.Billing do
       limit={@limit}
       period={:last_30_days}
       expanded={Enum.count(@usage.last_30_days.per_site) <= 1}
-      total_pageview_usage_domain={@total_pageview_usage_domain}
+      total_pageview_usage_site={@total_pageview_usage_site}
     />
     """
   end
@@ -84,7 +84,7 @@ defmodule PlausibleWeb.Components.Billing do
         limit={@limit}
         period={:current_cycle}
         expanded={not @show_all and Enum.count(@usage.current_cycle.per_site) <= 1}
-        total_pageview_usage_domain={@total_pageview_usage_domain}
+        total_pageview_usage_site={@total_pageview_usage_site}
       />
       <%= if @show_all do %>
         <.monthly_pageview_usage_breakdown
@@ -92,14 +92,14 @@ defmodule PlausibleWeb.Components.Billing do
           limit={@limit}
           period={:last_cycle}
           expanded={false}
-          total_pageview_usage_domain={@total_pageview_usage_domain}
+          total_pageview_usage_site={@total_pageview_usage_site}
         />
         <.monthly_pageview_usage_breakdown
           usage={@usage.penultimate_cycle}
           limit={@limit}
           period={:penultimate_cycle}
           expanded={false}
-          total_pageview_usage_domain={@total_pageview_usage_domain}
+          total_pageview_usage_site={@total_pageview_usage_site}
         />
       <% end %>
     </div>
@@ -110,7 +110,7 @@ defmodule PlausibleWeb.Components.Billing do
   attr(:limit, :any, required: true)
   attr(:period, :atom, required: true)
   attr(:expanded, :boolean, required: true)
-  attr(:total_pageview_usage_domain, :string, default: nil)
+  attr(:total_pageview_usage_site, :map, default: nil)
 
   defp monthly_pageview_usage_breakdown(assigns) do
     assigns =
@@ -118,7 +118,7 @@ defmodule PlausibleWeb.Components.Billing do
         assigns,
         :total_link,
         dashboard_url(
-          assigns.total_pageview_usage_domain,
+          assigns.total_pageview_usage_site,
           assigns.usage.date_range
         )
       )
@@ -188,7 +188,7 @@ defmodule PlausibleWeb.Components.Billing do
                 <.tooltip centered?={true}>
                   <:tooltip_content>View billing period in dashboard</:tooltip_content>
                   <.link
-                    href={dashboard_url(site.domain, @usage.date_range)}
+                    href={dashboard_url(site, @usage.date_range)}
                     class="shrink-0 text-indigo-500 hover:text-indigo-600"
                   >
                     <.external_link_icon class="ml-0.5 size-3.5 [&_path]:stroke-2" />
@@ -224,8 +224,8 @@ defmodule PlausibleWeb.Components.Billing do
 
   defp dashboard_url(nil, _date_range), do: nil
 
-  defp dashboard_url(domain, date_range) do
-    base = Routes.stats_path(PlausibleWeb.Endpoint, :stats, domain, [])
+  defp dashboard_url(%{id: id, domain: domain}, date_range) do
+    base = PlausibleWeb.URL.site_path(%Plausible.Site{id: id, domain: domain})
 
     base <>
       "?period=custom&from=#{Date.to_iso8601(date_range.first)}&to=#{Date.to_iso8601(date_range.last)}"

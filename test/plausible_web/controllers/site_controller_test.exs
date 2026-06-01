@@ -682,6 +682,9 @@ defmodule PlausibleWeb.SiteControllerTest do
       assert resp =~ "Site timezone"
 
       assert resp =~ "Site installation"
+
+      assert text_of_attr(resp, "[data-testid=mobile-nav-dropdown] select", "onchange") =~
+               "location.href = '/s/#{site.id}/settings/' + event.target.value"
     end
 
     on_ee do

@@ -3,6 +3,16 @@ defmodule Plausible.SitesTest do
 
   alias Plausible.Sites
 
+  describe "get_by_id/2" do
+    test "accepts integer strings and rejects malformed ids" do
+      site = new_site()
+
+      assert Sites.get_by_id(to_string(site.id)).id == site.id
+      assert Sites.get_by_id("not-an-id") == nil
+      assert_raise Ecto.NoResultsError, fn -> Sites.get_by_id!("not-an-id") end
+    end
+  end
+
   describe "create a site" do
     test "creates a site" do
       user = new_user()

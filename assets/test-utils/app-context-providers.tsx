@@ -82,7 +82,11 @@ export const TestContextProviders = ({
             role: Role.editor,
             loggedIn: true,
             id: 1,
-            team: { identifier: null, hasConsolidatedView: false }
+            team: {
+              identifier: null,
+              hasConsolidatedView: false,
+              consolidatedViewSiteId: null
+            }
           }
         }
       >

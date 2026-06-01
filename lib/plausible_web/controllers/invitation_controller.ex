@@ -38,7 +38,7 @@ defmodule PlausibleWeb.InvitationController do
         if site do
           conn
           |> put_flash(:success, "You now have access to #{site.domain}")
-          |> redirect(to: Routes.stats_path(conn, :stats, site.domain, []))
+          |> redirect(to: PlausibleWeb.URL.site_path(site))
         else
           conn
           |> put_flash(:success, "You now have access to \"#{team.name}\" team")
@@ -48,22 +48,22 @@ defmodule PlausibleWeb.InvitationController do
       {:error, :invitation_not_found} ->
         conn
         |> put_flash(:error, "Invitation missing or already accepted")
-        |> redirect(to: "/sites")
+        |> redirect(to: Routes.site_path(conn, :index))
 
       {:error, :transfer_to_self} ->
         conn
         |> put_flash(:error, "The site is already in the current team")
-        |> redirect(to: "/sites")
+        |> redirect(to: Routes.site_path(conn, :index))
 
       {:error, :permission_denied} ->
         conn
         |> put_flash(:error, "You can't add sites in the current team")
-        |> redirect(to: "/sites")
+        |> redirect(to: Routes.site_path(conn, :index))
 
       {:error, :no_plan} ->
         conn
         |> put_flash(:error, "No existing subscription")
-        |> redirect(to: "/sites")
+        |> redirect(to: Routes.site_path(conn, :index))
 
       {:error, {:over_plan_limits, limits}} ->
         conn
@@ -71,12 +71,12 @@ defmodule PlausibleWeb.InvitationController do
           :error,
           "Plan limits exceeded: #{PlausibleWeb.TextHelpers.pretty_list(limits)}."
         )
-        |> redirect(to: "/sites")
+        |> redirect(to: Routes.site_path(conn, :index))
 
       {:error, _} ->
         conn
         |> put_flash(:error, "Something went wrong, please try again")
-        |> redirect(to: "/sites")
+        |> redirect(to: Routes.site_path(conn, :index))
     end
   end
 
@@ -85,12 +85,12 @@ defmodule PlausibleWeb.InvitationController do
       {:ok, _invitation} ->
         conn
         |> put_flash(:success, "You have rejected the invitation")
-        |> redirect(to: "/sites")
+        |> redirect(to: Routes.site_path(conn, :index))
 
       {:error, :invitation_not_found} ->
         conn
         |> put_flash(:error, "Invitation missing or already accepted")
-        |> redirect(to: "/sites")
+        |> redirect(to: Routes.site_path(conn, :index))
     end
   end
 
@@ -108,12 +108,12 @@ defmodule PlausibleWeb.InvitationController do
 
         conn
         |> put_flash(:success, "You have removed the invitation for #{email}")
-        |> redirect(to: Routes.site_path(conn, :settings_people, site.domain))
+        |> redirect(to: PlausibleWeb.URL.site_path(site, "settings/people"))
 
       {:error, :invitation_not_found} ->
         conn
         |> put_flash(:error, "Invitation missing or already removed")
-        |> redirect(to: Routes.site_path(conn, :settings_people, conn.assigns.site.domain))
+        |> redirect(to: PlausibleWeb.URL.site_path(conn.assigns.site, "settings/people"))
     end
   end
 

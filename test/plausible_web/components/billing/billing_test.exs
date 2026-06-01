@@ -258,8 +258,8 @@ defmodule PlausibleWeb.Components.BillingTest do
       cycle_with_sites = %{
         @cycle
         | per_site: [
-            %{domain: "example.com", pageviews: 100, custom_events: 50, total: 150},
-            %{domain: "app.example.com", pageviews: 200, custom_events: 30, total: 230}
+            %{id: 1, domain: "example.com", pageviews: 100, custom_events: 50, total: 150},
+            %{id: 2, domain: "app.example.com", pageviews: 200, custom_events: 30, total: 230}
           ]
       }
 
@@ -275,8 +275,8 @@ defmodule PlausibleWeb.Components.BillingTest do
       cycle_with_sites = %{
         @cycle
         | per_site: [
-            %{domain: "example.com", pageviews: 100, custom_events: 50, total: 150},
-            %{domain: "app.example.com", pageviews: 200, custom_events: 30, total: 230}
+            %{id: 1, domain: "example.com", pageviews: 100, custom_events: 50, total: 150},
+            %{id: 2, domain: "app.example.com", pageviews: 200, custom_events: 30, total: 230}
           ]
       }
 
@@ -309,8 +309,8 @@ defmodule PlausibleWeb.Components.BillingTest do
       cycle_with_sites = %{
         @cycle
         | per_site: [
-            %{domain: "example.com", pageviews: 100, custom_events: 50, total: 150},
-            %{domain: "app.example.com", pageviews: 200, custom_events: 30, total: 230}
+            %{id: 1, domain: "example.com", pageviews: 100, custom_events: 50, total: 150},
+            %{id: 2, domain: "app.example.com", pageviews: 200, custom_events: 30, total: 230}
           ]
       }
 
@@ -321,19 +321,19 @@ defmodule PlausibleWeb.Components.BillingTest do
       refute html =~ "{ open: true }"
     end
 
-    test "renders a total link when total_pageview_usage_domain is provided" do
+    test "renders a total link when total_pageview_usage_site is provided" do
       usage = %{current_cycle: @cycle, last_cycle: @cycle, penultimate_cycle: @cycle}
 
       html =
         render_monthly_pageview_usage(usage, 10_000,
-          total_pageview_usage_domain: "my-site.example.com"
+          total_pageview_usage_site: %{id: 3, domain: "my-site.example.com"}
         )
 
       assert element_exists?(html, "[data-test-id='total-pageviews-dashboard-link']")
-      assert html =~ "/my-site.example.com?period=custom"
+      assert html =~ "/s/3?period=custom"
     end
 
-    test "renders no total link when no domain is provided" do
+    test "renders no total link when no site is provided" do
       usage = %{current_cycle: @cycle, last_cycle: @cycle, penultimate_cycle: @cycle}
 
       html = render_monthly_pageview_usage(usage, 10_000)
@@ -345,8 +345,8 @@ defmodule PlausibleWeb.Components.BillingTest do
       cycle_with_sites = %{
         @cycle
         | per_site: [
-            %{domain: "example.com", pageviews: 100, custom_events: 50, total: 150},
-            %{domain: "app.example.com", pageviews: 200, custom_events: 30, total: 230}
+            %{id: 1, domain: "example.com", pageviews: 100, custom_events: 50, total: 150},
+            %{id: 2, domain: "app.example.com", pageviews: 200, custom_events: 30, total: 230}
           ]
       }
 
@@ -354,8 +354,8 @@ defmodule PlausibleWeb.Components.BillingTest do
 
       html = render_monthly_pageview_usage(usage, 10_000)
 
-      assert html =~ "/example.com?period=custom"
-      assert html =~ "/app.example.com?period=custom"
+      assert html =~ "/s/1?period=custom"
+      assert html =~ "/s/2?period=custom"
     end
 
     test "dashboard links include the billing cycle date range" do
@@ -363,11 +363,11 @@ defmodule PlausibleWeb.Components.BillingTest do
 
       html =
         render_monthly_pageview_usage(usage, 10_000,
-          total_pageview_usage_domain: "my-site.example.com"
+          total_pageview_usage_site: %{id: 3, domain: "my-site.example.com"}
         )
 
       assert html =~
-               "/my-site.example.com?period=custom&amp;from=2024-01-01&amp;to=2024-01-31"
+               "/s/3?period=custom&amp;from=2024-01-01&amp;to=2024-01-31"
     end
   end
 
@@ -387,14 +387,14 @@ defmodule PlausibleWeb.Components.BillingTest do
     assigns = %{
       usage: usage,
       limit: limit,
-      total_pageview_usage_domain: opts[:total_pageview_usage_domain]
+      total_pageview_usage_site: opts[:total_pageview_usage_site]
     }
 
     ~H"""
     <PlausibleWeb.Components.Billing.render_monthly_pageview_usage
       usage={@usage}
       limit={@limit}
-      total_pageview_usage_domain={@total_pageview_usage_domain}
+      total_pageview_usage_site={@total_pageview_usage_site}
     />
     """
     |> rendered_to_string()

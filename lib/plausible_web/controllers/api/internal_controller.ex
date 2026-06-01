@@ -2,7 +2,7 @@ defmodule PlausibleWeb.Api.InternalController do
   use PlausibleWeb, :controller
   use Plausible.Repo
   import Ecto.Query
-  alias Plausible.{Sites, Auth}
+  alias Plausible.Auth
   alias Plausible.Auth.User
   alias Plausible.Teams
 
@@ -27,9 +27,9 @@ defmodule PlausibleWeb.Api.InternalController do
     "props" => Plausible.Billing.Feature.Props,
     "conversions" => Plausible.Billing.Feature.Goals
   }
-  def disable_feature(conn, %{"domain" => domain, "feature" => feature}) do
+  def disable_feature(conn, %{"feature" => feature} = params) do
     with %User{id: user_id} = user <- conn.assigns[:current_user],
-         site <- Sites.get_by_domain(domain),
+         %Plausible.Site{} = site <- get_internal_site(params),
          true <-
            Plausible.Teams.Memberships.has_editor_access?(site, user) ||
              Auth.super_admin?(user_id),
@@ -57,13 +57,15 @@ defmodule PlausibleWeb.Api.InternalController do
     end
   end
 
+  defp get_internal_site(%{"site_id" => site_id}), do: Plausible.Sites.get_by_id(site_id)
+
   defp sites_for(user, team) do
     from(u in subquery(Teams.Sites.accessible_by(user, team)),
       inner_join: s in ^Plausible.Site.regular(),
       on: u.site_id == s.id,
       left_join: up in Plausible.Site.UserPreference,
       on: up.site_id == s.id and up.user_id == ^user.id,
-      select: %{domain: s.domain},
+      select: %{id: s.id, domain: s.domain},
       order_by: [
         asc:
           fragment(
