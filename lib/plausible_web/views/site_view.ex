@@ -3,7 +3,7 @@ defmodule PlausibleWeb.SiteView do
   use Plausible
 
   def plausible_url do
-    PlausibleWeb.Endpoint.url()
+    PlausibleWeb.URL.base_url()
   end
 
   def with_indefinite_article(word) do

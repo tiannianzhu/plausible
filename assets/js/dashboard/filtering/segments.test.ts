@@ -146,7 +146,11 @@ describe(`${isListableSegment.name}`, () => {
     loggedIn: true,
     id: 1,
     role: Role.editor,
-    team: { identifier: null, hasConsolidatedView: false }
+    team: {
+      identifier: null,
+      hasConsolidatedView: false,
+      consolidatedViewSiteId: null
+    }
   }
 
   it('should return true for site segment when siteSegmentsAvailable is true', () => {
@@ -164,7 +168,11 @@ describe(`${isListableSegment.name}`, () => {
           loggedIn: false,
           role: Role.public,
           id: null,
-          team: { identifier: null, hasConsolidatedView: false }
+          team: {
+            identifier: null,
+            hasConsolidatedView: false,
+            consolidatedViewSiteId: null
+          }
         }
       })
     ).toBe(false)
@@ -243,7 +251,11 @@ describe(`${canExpandSegment.name}`, () => {
         loggedIn: true,
         role,
         id: 1,
-        team: { identifier: null, hasConsolidatedView: false }
+        team: {
+          identifier: null,
+          hasConsolidatedView: false,
+          consolidatedViewSiteId: null
+        }
       }
       expect(
         canExpandSegment({
@@ -262,7 +274,11 @@ describe(`${canExpandSegment.name}`, () => {
           loggedIn: true,
           role: Role.owner,
           id: 111,
-          team: { identifier: null, hasConsolidatedView: false }
+          team: {
+            identifier: null,
+            hasConsolidatedView: false,
+            consolidatedViewSiteId: null
+          }
         }
       })
     ).toBe(true)
@@ -281,7 +297,11 @@ describe(`${canExpandSegment.name}`, () => {
         loggedIn: true,
         role,
         id: 1,
-        team: { identifier: null, hasConsolidatedView: false }
+        team: {
+          identifier: null,
+          hasConsolidatedView: false,
+          consolidatedViewSiteId: null
+        }
       }
       expect(
         canExpandSegment({
@@ -300,7 +320,11 @@ describe(`${canExpandSegment.name}`, () => {
           loggedIn: true,
           role: Role.owner,
           id: 111,
-          team: { identifier: null, hasConsolidatedView: false }
+          team: {
+            identifier: null,
+            hasConsolidatedView: false,
+            consolidatedViewSiteId: null
+          }
         }
       })
     ).toBe(false)
@@ -316,7 +340,11 @@ describe(`${canExpandSegment.name}`, () => {
             loggedIn: false,
             role: Role.public,
             id: null,
-            team: { identifier: null, hasConsolidatedView: false }
+            team: {
+              identifier: null,
+              hasConsolidatedView: false,
+              consolidatedViewSiteId: null
+            }
           }
         })
       ).toBe(false)

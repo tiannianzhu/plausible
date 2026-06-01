@@ -477,12 +477,13 @@ defmodule PlausibleWeb.Email do
     |> to(user)
     |> tag("import-success-email")
     |> subject("#{label} data imported for #{site_import.site.domain}")
-    |> render(import_api.email_template(), %{
+      |> render(import_api.email_template(), %{
       site_import: site_import,
       label: label,
       link:
-        PlausibleWeb.Endpoint.url() <>
-          "/" <> URI.encode_www_form(site_import.site.domain) <> "?__team=#{team.identifier}",
+        PlausibleWeb.URL.url(
+          "#{URI.encode_www_form(site_import.site.domain)}?__team=#{team.identifier}"
+        ),
       user: user,
       success: true
     })

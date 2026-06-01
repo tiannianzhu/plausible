@@ -1,4 +1,8 @@
 import React, { ReactNode } from 'react'
+import { withBasePath } from '../../../base-path'
+
+const iconPath = (type: 'browser' | 'os', filename: string) =>
+  withBasePath(`/images/icon/${type}/${filename}`)
 
 // Icons copied from https://github.com/alrra/browser-logos
 const BROWSER_ICONS: Record<string, string> = {
@@ -27,7 +31,7 @@ export const BrowserIcon = ({ dimensionValue }: { dimensionValue: string }) => {
   return (
     <img
       alt=""
-      src={`/images/icon/browser/${filename}`}
+      src={iconPath('browser', filename)}
       className="inline-block w-4 h-4 mr-2"
     />
   )
@@ -58,7 +62,7 @@ export const OsIcon = ({ dimensionValue }: { dimensionValue: string }) => {
   return (
     <img
       alt=""
-      src={`/images/icon/os/${filename}`}
+      src={iconPath('os', filename)}
       className="inline-block w-4 h-4 mr-2"
     />
   )

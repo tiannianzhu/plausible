@@ -14,6 +14,7 @@
   <div
     id="stats-react-container"
     style="overflow-anchor: none;"
+    data-site-id={@site.id}
     data-domain={@site.domain}
     data-offset={Plausible.Site.tz_offset(@site)}
     data-has-goals={to_string(@has_goals)}
@@ -48,6 +49,7 @@
     data-segments={Jason.encode!(@segments)}
     data-is-consolidated-view={Jason.encode!(@consolidated_view?)}
     data-consolidated-view-available={Jason.encode!(@consolidated_view_available?)}
+    data-consolidated-view-site-id={@consolidated_view_site_id}
     data-exploration-available={
       to_string(Plausible.Billing.Feature.Funnels.check_availability(@site.team) == :ok)
     }
@@ -67,7 +69,7 @@
       <div class="flex mt-8 lg:shrink-0 lg:mt-0">
         <div class="inline-flex shadow-sm rounded-md">
           <a
-            href="/register"
+            href={Routes.auth_path(@conn, :register_form)}
             onclick="plausible('CTA Click', {props: {position: 'Bottom', type: 'Live demo', button: 'Start free trial'}})"
             class="inline-flex items-center justify-center px-5 py-3 text-base font-medium text-white bg-indigo-600 border border-transparent leading-6 rounded-md hover:bg-indigo-500 focus:outline-hidden focus:ring transition duration-150 ease-in-out"
           >
@@ -76,7 +78,7 @@
         </div>
         <div class="inline-flex ml-3 shadow-xs rounded-md">
           <a
-            href="/#pricing"
+            href={Routes.page_path(@conn, :index) <> "#pricing"}
             onclick="plausible('CTA Click', {props: {position: 'Bottom', type: 'Live demo', button: 'See pricing'}})"
             class="inline-flex items-center justify-center px-5 py-3 text-base font-medium text-indigo-600 bg-white border border-transparent leading-6 rounded-md dark:text-gray-100 dark:bg-gray-800 hover:text-indigo-500 dark:hover:text-indigo-500 focus:outline-hidden focus:ring transition duration-150 ease-in-out"
           >

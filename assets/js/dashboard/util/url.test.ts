@@ -1,23 +1,58 @@
-import { apiPath, externalLinkForPage, isValidHttpUrl, trimURL } from './url'
+import {
+  apiPath,
+  internalApiPath,
+  siteBasePath,
+  sitePath,
+  externalLinkForPage,
+  isValidHttpUrl,
+  trimURL
+} from './url'
 import { siteContextDefaultValue } from '../site-context'
 
 describe('apiPath', () => {
   it.each([
-    ['example.com', undefined, '/api/stats/example.com/'],
-    ['example.com', '', '/api/stats/example.com/'],
-    ['example.com', '/test', '/api/stats/example.com/test/'],
-    [
-      'example.com/path/is-really/deep',
-      '',
-      '/api/stats/example.com%2Fpath%2Fis-really%2Fdeep/'
-    ]
+    [{ id: 1 }, undefined, '/api/stats/s/1/'],
+    [{ id: 1 }, '', '/api/stats/s/1/'],
+    [{ id: 1 }, '/test', '/api/stats/s/1/test/']
   ])(
-    'when site.domain is %p and path is %s, should return %s',
-    (domain, path, expected) => {
-      const result = apiPath({ domain }, path)
+    'when site is %p and path is %s, should return %s',
+    (site, path, expected) => {
+      const result = apiPath(site, path)
       expect(result).toBe(expected)
     }
   )
+})
+
+describe('internalApiPath', () => {
+  it.each([
+    [{ id: 1 }, '', '/api/s/1'],
+    [{ id: 1 }, '/segments', '/api/s/1/segments']
+  ])(
+    'when site is %p and path is %s, should return %s',
+    (site, path, expected) => {
+      const result = internalApiPath(site, path)
+      expect(result).toBe(expected)
+    }
+  )
+})
+
+describe('site paths', () => {
+  it.each([
+    [{ id: 1, domain: 'example.com', shared: false }, '/s/1'],
+    [
+      { id: 3, domain: 'example.com/path/is-really/deep', shared: false },
+      '/s/3'
+    ],
+    [{ id: 1, domain: 'example.com', shared: true }, '/share/example.com']
+  ])('siteBasePath for %p returns %s', (site, expected) => {
+    expect(siteBasePath(site)).toBe(expected)
+  })
+
+  it('appends dashboard subpaths to id-based site paths', () => {
+    expect(
+      sitePath({ id: 1, domain: 'example.com', shared: false }, '/settings')
+    ).toBe('/s/1/settings')
+  })
 })
 
 describe('externalLinkForPage', () => {

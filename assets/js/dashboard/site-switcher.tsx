@@ -18,6 +18,8 @@ import { rootRoute } from './router'
 import { get } from './api'
 import { ErrorPanel } from './components/error-panel'
 import { useRoutelessModalsContext } from './navigation/routeless-modals-context'
+import { siteBasePath, sitePath } from './util/url'
+import { withBasePath } from '../base-path'
 
 const Favicon = ({
   domain,
@@ -29,11 +31,11 @@ const Favicon = ({
   <img
     aria-hidden="true"
     alt=""
-    src={`/favicon/sources/${encodeURIComponent(domain)}`}
+    src={withBasePath(`/favicon/sources/${encodeURIComponent(domain)}`)}
     onError={(e) => {
       const target = e.target as HTMLImageElement
       target.onerror = null
-      target.src = '/favicon/sources/placeholder'
+      target.src = withBasePath('/favicon/sources/placeholder')
     }}
     referrerPolicy="no-referrer"
     className={className}
@@ -58,13 +60,20 @@ const buttonLinkClassName = classNames(
 
 const getSwitchToSiteURL = (
   currentSite: PlausibleSite,
-  site: { domain: string }
+  site: { domain: string; id: number | null }
 ): string | null => {
   // Prevents reloading the page when the current site is selected
   if (currentSite.domain === site.domain) {
     return null
   }
-  return `/${encodeURIComponent(site.domain)}`
+  if (site.id === null) {
+    return null
+  }
+  return siteBasePath({
+    id: site.id,
+    domain: site.domain,
+    shared: false
+  })
 }
 
 const SiteSwitcherStatic = () => {
@@ -96,10 +105,9 @@ export const SiteSwitcher = () => {
   const sitesQuery = useQuery({
     enabled: user.loggedIn,
     queryKey: ['sites'],
-    queryFn: async (): Promise<{ data: Array<{ domain: string }> }> => {
-      const response = await get('/api/sites')
-      return response
-    },
+    queryFn: (): Promise<{
+      data: Array<{ domain: string; id: number }>
+    }> => get(withBasePath('/api/sites')),
     placeholderData: (previousData) => previousData
   })
 
@@ -121,13 +129,13 @@ export const SiteSwitcher = () => {
         <>
           {!!dashboardRouteMatch &&
             !modal &&
-            sitesQuery.data?.data.slice(0, 8).map(({ domain }, index) => (
+            sitesQuery.data?.data.slice(0, 8).map(({ domain, id }, index) => (
               <Keybind
                 key={domain}
                 keyboardKey={`${index + 1}`}
                 type="keydown"
                 handler={() => {
-                  const url = getSwitchToSiteURL(currentSite, { domain })
+                  const url = getSwitchToSiteURL(currentSite, { domain, id })
                   if (!url) {
                     closePopover()
                   } else {
@@ -150,7 +158,8 @@ export const SiteSwitcher = () => {
                 type="keydown"
                 handler={() => {
                   const url = getSwitchToSiteURL(currentSite, {
-                    domain: user.team.identifier!
+                    domain: user.team.identifier!,
+                    id: user.team.consolidatedViewSiteId
                   })
                   if (!url) {
                     closePopover()
@@ -205,7 +214,7 @@ export const SiteSwitcher = () => {
             >
               <div className="flex">
                 {canSeeViewAllSites && (
-                  <a className={buttonLinkClassName} href={`/sites`}>
+                  <a className={buttonLinkClassName} href={withBasePath('/sites')}>
                     <ArrowLeftIcon className="size-4 mr-1.5" />
                     Back to sites
                   </a>
@@ -213,7 +222,7 @@ export const SiteSwitcher = () => {
                 {canSeeSiteSettings && (
                   <a
                     className={buttonLinkClassName}
-                    href={`/${encodeURIComponent(currentSite.domain)}/settings/general`}
+                    href={sitePath(currentSite, '/settings/general')}
                   >
                     <Cog8ToothIcon className="size-4 mr-1.5" />
                     Site settings
@@ -242,7 +251,8 @@ export const SiteSwitcher = () => {
                   className={menuItemClassName}
                   href={
                     getSwitchToSiteURL(currentSite, {
-                      domain: user.team.identifier
+                      domain: user.team.identifier,
+                      id: user.team.consolidatedViewSiteId
                     }) ?? '#'
                   }
                   onClick={() => closePopover()}
@@ -253,12 +263,14 @@ export const SiteSwitcher = () => {
                 </a>
               )}
               {!!sitesInDropdown &&
-                sitesInDropdown.map(({ domain }, index) => (
+                sitesInDropdown.map(({ domain, id }, index) => (
                   <a
                     data-selected={currentSite.domain === domain}
                     key={domain}
                     className={menuItemClassName}
-                    href={getSwitchToSiteURL(currentSite, { domain }) ?? '#'}
+                    href={
+                      getSwitchToSiteURL(currentSite, { domain, id }) ?? '#'
+                    }
                     onClick={
                       currentSite.domain === domain
                         ? () => closePopover()

@@ -25,6 +25,22 @@ defmodule PlausibleWeb.SiteControllerTest do
       assert html_response(conn, 200) =~ "Add website info"
     end
 
+    test "includes the configured base path in the form action", %{conn: conn} do
+      previous_url = PlausibleWeb.Endpoint.config(:url)
+      configured_url = Keyword.put(previous_url, :path, "/plausible")
+
+      PlausibleWeb.Endpoint.config_change([url: configured_url], [])
+
+      on_exit(fn ->
+        PlausibleWeb.Endpoint.config_change([url: previous_url], [])
+      end)
+
+      conn = get(conn, "/sites/new?flow=provisioning")
+
+      assert text_of_attr(html_response(conn, 200), "form", "action") ==
+               "/plausible/sites?flow=provisioning"
+    end
+
     test "shows onboarding steps regardless of sites provisioned", %{conn: conn1, user: user} do
       conn = get(conn1, "/sites/new")
 
@@ -682,6 +698,9 @@ defmodule PlausibleWeb.SiteControllerTest do
       assert resp =~ "Site timezone"
 
       assert resp =~ "Site installation"
+
+      assert text_of_attr(resp, "[data-testid=mobile-nav-dropdown] select", "onchange") =~
+               "location.href = '/s/#{site.id}/settings/' + event.target.value"
     end
 
     on_ee do

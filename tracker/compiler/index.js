@@ -7,7 +7,7 @@ import variantsFile from './variants.json' with { type: 'json' }
 import { canSkipCompile } from './can-skip-compile.js'
 import packageJson from '../package.json' with { type: 'json' }
 import progress from 'cli-progress'
-import { spawn, Worker, Pool } from 'threads'
+import { spawn, Thread, Worker } from 'threads'
 import json from '@rollup/plugin-json'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -61,16 +61,12 @@ export async function compileAll(options = {}) {
   )
   bar.start(variantsToCompile.length, 0)
 
-  const workerPool = Pool(() => spawn(new Worker('./worker-thread.js')))
-  variantsToCompile.forEach((variant) => {
-    workerPool.queue(async (worker) => {
-      await worker.compileFile(variant, { ...options, bundledCode })
-      bar.increment()
-    })
-  })
-
-  await workerPool.completed()
-  await workerPool.terminate()
+  const worker = await spawn(new Worker('./worker-thread.js'))
+  for (const variant of variantsToCompile) {
+    await worker.compileFile(variant, { ...options, bundledCode })
+    bar.increment()
+  }
+  await Thread.terminate(worker)
   bar.stop()
 
   console.log(

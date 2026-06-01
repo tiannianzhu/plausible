@@ -78,9 +78,9 @@ defmodule PlausibleWeb.Plugs.AuthorizeSiteAccess do
   def call(conn, {allowed_roles, site_param}) do
     current_user = conn.assigns[:current_user]
 
-    with {:ok, domain} <- get_domain(conn, site_param),
+    with {:ok, site_lookup} <- get_site_lookup(conn, site_param),
          {:ok, %{site: site, role: membership_role, member_type: member_type}} <-
-           get_site_with_role(conn, current_user, domain),
+           get_site_with_role(conn, current_user, site_lookup),
          :ok <- ensure_consolidated_view_access(conn, site),
          {:ok, shared_link} <- maybe_get_shared_link(conn, site) do
       role =
@@ -152,30 +152,52 @@ defmodule PlausibleWeb.Plugs.AuthorizeSiteAccess do
   end
 
   defp valid_path_fragment?(fragment), do: is_binary(fragment) and String.valid?(fragment)
+  defp valid_site_id?(fragment), do: is_binary(fragment) and fragment =~ ~r/^\d+$/
 
-  defp get_domain(conn, nil) do
-    domain = conn.path_params["domain"]
+  defp get_site_lookup(conn, nil) do
+    cond do
+      valid_site_id?(conn.path_params["site_id"]) ->
+        {:ok, {:site_id, String.to_integer(conn.path_params["site_id"])}}
 
-    if valid_path_fragment?(domain) do
-      {:ok, domain}
-    else
-      error_not_found(conn)
+      true ->
+        domain = decode_domain(conn.path_params["domain"])
+
+        if valid_path_fragment?(domain) do
+          {:ok, {:domain, domain}}
+        else
+          error_not_found(conn)
+        end
     end
   end
 
-  defp get_domain(conn, site_param) do
-    domain = conn.params[site_param]
+  defp get_site_lookup(conn, site_param) do
+    site_param_value = conn.params[site_param]
 
-    if valid_path_fragment?(domain) do
-      {:ok, domain}
+    if valid_site_id?(site_param_value) do
+      {:ok, {:site_id, String.to_integer(site_param_value)}}
     else
-      error_not_found(conn)
+      domain = decode_domain(site_param_value)
+
+      if valid_path_fragment?(domain) do
+        {:ok, {:domain, domain}}
+      else
+        error_not_found(conn)
+      end
     end
   end
 
-  defp get_site_with_role(conn, current_user, domain) do
-    site = Repo.get_by(Plausible.Site, domain: domain)
+  defp decode_domain(domain) when is_binary(domain), do: URI.decode_www_form(domain)
+  defp decode_domain(domain), do: domain
 
+  defp get_site_with_role(conn, current_user, {:domain, domain}) do
+    do_get_site_with_role(conn, current_user, Repo.get_by(Plausible.Site, domain: domain))
+  end
+
+  defp get_site_with_role(conn, current_user, {:site_id, site_id}) do
+    do_get_site_with_role(conn, current_user, Repo.get(Plausible.Site, site_id))
+  end
+
+  defp do_get_site_with_role(conn, current_user, site) do
     if site do
       {member_type, site_role} =
         case Teams.Memberships.site_role(site, current_user) do

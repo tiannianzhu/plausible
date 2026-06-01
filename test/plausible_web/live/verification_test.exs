@@ -57,6 +57,20 @@ defmodule PlausibleWeb.Live.VerificationTest do
                "We're visiting your site to ensure that everything is working"
     end
 
+    @tag :ee_only
+    test "LiveView mounts from the site id route", %{conn: conn, site: site} do
+      stub_lookup_a_records(site.domain)
+
+      stub_verification_result(%{
+        "completed" => false,
+        "error" => %{"message" => "Error"}
+      })
+
+      {:ok, _lv, html} = conn |> no_slowdown() |> live("/s/#{site.id}/verification")
+
+      assert html =~ "Verifying your installation"
+    end
+
     @tag :ce_build_only
     test "LiveView mounts (ce)", %{conn: conn, site: site} do
       {_, html} = get_lv(conn, site)
@@ -124,6 +138,7 @@ defmodule PlausibleWeb.Live.VerificationTest do
       html = render(lv)
       assert html =~ "Success!"
       assert html =~ "Awaiting your first pageview"
+      assert html =~ ~s[href="/s/#{site.id}?skip_to_dashboard=true"]
     end
 
     @tag :ee_only
@@ -195,7 +210,7 @@ defmodule PlausibleWeb.Live.VerificationTest do
         build(:pageview)
       ])
 
-      assert_redirect(lv, Routes.stats_path(PlausibleWeb.Endpoint, :stats, site.domain))
+      assert_redirect(lv, PlausibleWeb.URL.site_path(site))
     end
 
     @tag :ce_build_only
@@ -207,7 +222,7 @@ defmodule PlausibleWeb.Live.VerificationTest do
 
       populate_stats(site, [build(:pageview)])
 
-      assert_redirect(lv, Routes.stats_path(PlausibleWeb.Endpoint, :stats, site.domain))
+      assert_redirect(lv, PlausibleWeb.URL.site_path(site))
     end
 
     for {installation_type_param, expected_text, saved_installation_type} <- [

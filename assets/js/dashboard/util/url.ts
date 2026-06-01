@@ -1,10 +1,42 @@
 import { PlausibleSite } from '../site-context'
+import { withBasePath } from '../../base-path'
 
 export function apiPath(
-  site: Pick<PlausibleSite, 'domain'>,
+  site: Pick<PlausibleSite, 'id'>,
   path = ''
 ): string {
-  return `/api/stats/${encodeURIComponent(site.domain)}${path}/`
+  return withBasePath(`/api/stats/s/${site.id}${path}/`)
+}
+
+export function internalApiPath(
+  site: Pick<PlausibleSite, 'id'>,
+  path = ''
+): string {
+  return withBasePath(`/api/s/${site.id}${path}`)
+}
+
+export function siteBasePath(
+  site: Pick<PlausibleSite, 'id' | 'domain' | 'shared'>
+): string {
+  if (site.shared) {
+    return withBasePath(`/share/${encodeURIComponent(site.domain)}`)
+  }
+
+  return withBasePath(`/s/${site.id}`)
+}
+
+export function sitePath(
+  site: Pick<PlausibleSite, 'id' | 'domain' | 'shared'>,
+  path = ''
+): string {
+  const base = siteBasePath(site)
+
+  if (!path) {
+    return base
+  }
+
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+  return `${base}${normalizedPath}`
 }
 
 export function externalLinkForPage(

@@ -48,6 +48,19 @@ defmodule PlausibleWeb.Live.AwaitingPageviews do
     {:ok, socket}
   end
 
+  def mount(
+        %{"site_id" => site_id} = params,
+        session,
+        socket
+      ) do
+    domain = Plausible.Sites.get_by_id!(site_id).domain
+
+    params
+    |> Map.delete("site_id")
+    |> Map.put("domain", domain)
+    |> mount(session, socket)
+  end
+
   def render(assigns) do
     ~H"""
     <PlausibleWeb.Components.FlowProgress.render flow={@flow} current_step="Verify installation" />
@@ -89,7 +102,7 @@ defmodule PlausibleWeb.Live.AwaitingPageviews do
   end
 
   defp redirect_to_stats(socket) do
-    stats_url = Routes.stats_path(PlausibleWeb.Endpoint, :stats, socket.assigns.domain, [])
+    stats_url = PlausibleWeb.URL.site_path(socket.assigns.site)
     redirect(socket, to: stats_url)
   end
 

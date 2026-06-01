@@ -34,6 +34,7 @@ import { MoreLinkState } from '../more-link-state'
 import { Pill } from '../../components/pill'
 import * as api from '../../api'
 import * as url from '../../util/url'
+import { withBasePath } from '../../../base-path'
 import { conversionsRoute, customPropsRoute } from '../../router'
 import {
   Mode,
@@ -346,7 +347,7 @@ function Behaviours({
           }
           callToAction={{
             action: 'Set up goals',
-            link: `/${encodeURIComponent(site.domain)}/settings/goals`
+            link: url.sitePath(site, '/settings/goals')
           }}
           onHideAction={() => disableMode(Mode.CONVERSIONS)}
         />
@@ -396,10 +397,13 @@ function Behaviours({
       if (site.funnelsAvailable) {
         callToAction = {
           action: 'Set up funnels',
-          link: `/${encodeURIComponent(site.domain)}/settings/funnels`
+          link: url.sitePath(site, '/settings/funnels')
         }
       } else {
-        callToAction = { action: 'Upgrade', link: '/billing/choose-plan' }
+        callToAction = {
+          action: 'Upgrade',
+          link: withBasePath('/billing/choose-plan')
+        }
       }
 
       return (
@@ -435,10 +439,13 @@ function Behaviours({
       if (site.propsAvailable) {
         callToAction = {
           action: 'Set up props',
-          link: `/${encodeURIComponent(site.domain)}/settings/properties`
+          link: url.sitePath(site, '/settings/properties')
         }
       } else {
-        callToAction = { action: 'Upgrade', link: '/billing/choose-plan' }
+        callToAction = {
+          action: 'Upgrade',
+          link: withBasePath('/billing/choose-plan')
+        }
       }
 
       return (

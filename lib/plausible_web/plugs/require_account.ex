@@ -39,7 +39,7 @@ defmodule PlausibleWeb.RequireAccountPlug do
       not user.email_verified and
           conn.path_info not in @unverified_email_exceptions ->
         conn
-        |> Phoenix.Controller.redirect(to: "/activate")
+        |> Phoenix.Controller.redirect(to: Routes.auth_path(conn, :activate_form))
         |> halt
 
       true ->

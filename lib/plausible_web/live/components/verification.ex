@@ -6,11 +6,11 @@ defmodule PlausibleWeb.Live.Components.Verification do
   use Phoenix.LiveComponent
   use Plausible
 
-  alias PlausibleWeb.Router.Helpers, as: Routes
   alias Plausible.InstallationSupport.{State, Result}
 
   import PlausibleWeb.Components.Generic
 
+  attr(:site, Plausible.Site, required: true)
   attr(:domain, :string, required: true)
 
   attr(:message, :string,
@@ -33,11 +33,13 @@ defmodule PlausibleWeb.Live.Components.Verification do
       <.render_progress :if={not @finished?} message={@message} />
       <.render_success
         :if={@finished? and @success?}
+        site={@site}
         awaiting_first_pageview?={@awaiting_first_pageview?}
         domain={@domain}
       />
       <.render_failed
         :if={@finished? and not @success?}
+        site={@site}
         interpretation={@interpretation}
         attempts={@attempts}
         domain={@domain}
@@ -86,7 +88,7 @@ defmodule PlausibleWeb.Live.Components.Verification do
         </p>
       </div>
       <.button_link
-        href={"/#{URI.encode_www_form(@domain)}?skip_to_dashboard=true"}
+        href={PlausibleWeb.URL.site_path(@site, nil, skip_to_dashboard: true)}
         class="w-full font-bold mb-4"
       >
         Go to the dashboard
@@ -129,7 +131,7 @@ defmodule PlausibleWeb.Live.Components.Verification do
             <span id="verify-custom-url-link">
               Is your website located at a different URL?
               <.styled_link href={
-                Routes.site_path(PlausibleWeb.Endpoint, :verification, @domain,
+                PlausibleWeb.URL.site_path(@site, "verification",
                   flow: @flow,
                   installation_type: @installation_type,
                   custom_url: true
@@ -148,7 +150,7 @@ defmodule PlausibleWeb.Live.Components.Verification do
           <:item>
             Need to see installation instructions again?
             <.styled_link href={
-              Routes.site_path(PlausibleWeb.Endpoint, :installation, @domain,
+              PlausibleWeb.URL.site_path(@site, "installation",
                 flow: @flow,
                 installation_type: @installation_type
               )
@@ -158,7 +160,7 @@ defmodule PlausibleWeb.Live.Components.Verification do
           </:item>
           <:item>
             Run verification later and go to site settings?
-            <.styled_link href={"/#{URI.encode_www_form(@domain)}/settings/general"}>
+            <.styled_link href={PlausibleWeb.URL.site_path(@site, "settings/general")}>
               Click here
             </.styled_link>
           </:item>

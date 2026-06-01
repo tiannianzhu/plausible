@@ -19,12 +19,22 @@ defmodule PlausibleWeb.FirstLaunchPlug do
 
   @impl true
   def init(opts) do
-    _path = Keyword.fetch!(opts, :redirect_to)
+    redirect_to = Keyword.fetch!(opts, :redirect_to)
+
+    if is_binary(redirect_to) or is_function(redirect_to, 1) do
+      redirect_to
+    else
+      raise ArgumentError, "redirect_to must be a path or a function that accepts conn"
+    end
   end
 
   @impl true
   def call(%Plug.Conn{private: %{__MODULE__ => :skip}} = conn, _), do: conn
   def call(%Plug.Conn{request_path: path} = conn, path), do: conn
+
+  def call(conn, redirect_to) when is_function(redirect_to, 1) do
+    call(conn, redirect_to.(conn))
+  end
 
   def call(conn, redirect_to) do
     if Release.should_be_first_launch?() do

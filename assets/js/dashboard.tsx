@@ -77,7 +77,15 @@ if (container && container.dataset) {
                       team: {
                         identifier: container.dataset.teamIdentifier ?? null,
                         hasConsolidatedView:
-                          container.dataset.consolidatedViewAvailable === 'true'
+                          container.dataset.consolidatedViewAvailable ===
+                          'true',
+                        consolidatedViewSiteId:
+                          container.dataset.consolidatedViewSiteId === undefined
+                            ? null
+                            : parseInt(
+                                container.dataset.consolidatedViewSiteId,
+                                10
+                              )
                       }
                     }
                   : {
@@ -86,7 +94,8 @@ if (container && container.dataset) {
                       role: container.dataset.currentUserRole as Role,
                       team: {
                         identifier: null,
-                        hasConsolidatedView: false
+                        hasConsolidatedView: false,
+                        consolidatedViewSiteId: null
                       }
                     }
               }

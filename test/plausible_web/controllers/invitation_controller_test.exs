@@ -20,7 +20,7 @@ defmodule PlausibleWeb.Site.InvitationControllerTest do
       assert Phoenix.Flash.get(conn.assigns.flash, :success) ==
                "You now have access to #{site.domain}"
 
-      assert redirected_to(conn) == Routes.stats_path(PlausibleWeb.Endpoint, :stats, site.domain)
+      assert redirected_to(conn) == PlausibleWeb.URL.site_path(site)
 
       refute Repo.exists?(from(i in Plausible.Teams.Invitation, where: i.email == ^user.email))
 
@@ -53,7 +53,7 @@ defmodule PlausibleWeb.Site.InvitationControllerTest do
       invitation = invite_guest(site, user.email, role: :editor, inviter: owner)
 
       c1 = post(conn, "/sites/invitations/#{invitation.invitation_id}/accept")
-      assert redirected_to(c1) == Routes.stats_path(PlausibleWeb.Endpoint, :stats, site.domain)
+      assert redirected_to(c1) == PlausibleWeb.URL.site_path(site)
 
       assert Phoenix.Flash.get(c1.assigns.flash, :success) ==
                "You now have access to #{site.domain}"
@@ -78,8 +78,7 @@ defmodule PlausibleWeb.Site.InvitationControllerTest do
 
       conn = post(conn, "/sites/invitations/#{transfer.transfer_id}/accept")
 
-      assert redirected_to(conn, 302) ==
-               Routes.stats_path(PlausibleWeb.Endpoint, :stats, site.domain)
+      assert redirected_to(conn, 302) == PlausibleWeb.URL.site_path(site)
 
       assert Phoenix.Flash.get(conn.assigns.flash, :success) =~
                "You now have access to"
@@ -141,8 +140,7 @@ defmodule PlausibleWeb.Site.InvitationControllerTest do
 
       conn = post(conn, "/sites/invitations/#{transfer.transfer_id}/accept")
 
-      assert redirected_to(conn, 302) ==
-               Routes.stats_path(PlausibleWeb.Endpoint, :stats, site.domain)
+      assert redirected_to(conn, 302) == PlausibleWeb.URL.site_path(site)
 
       assert Phoenix.Flash.get(conn.assigns.flash, :success) =~
                "You now have access to"
@@ -210,8 +208,7 @@ defmodule PlausibleWeb.Site.InvitationControllerTest do
           "/sites/invitations/#{transfer.transfer_id}/accept?skip_site_members_transfer=true"
         )
 
-      assert redirected_to(conn, 302) ==
-               Routes.stats_path(PlausibleWeb.Endpoint, :stats, site.domain)
+      assert redirected_to(conn, 302) == PlausibleWeb.URL.site_path(site)
 
       assert Phoenix.Flash.get(conn.assigns.flash, :success) =~
                "You now have access to"

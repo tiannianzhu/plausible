@@ -13,6 +13,7 @@ import LazyLoader from '../components/lazy-loader'
 import { useDashboardStateContext } from '../dashboard-state-context'
 import { useSiteContext } from '../site-context'
 import { UIMode, useTheme } from '../theme-context'
+import { apiPath } from '../util/url'
 
 const getPalette = (theme) => {
   if (theme.mode === UIMode.dark) {
@@ -151,10 +152,7 @@ export default function Funnel({ funnelName, tabs }) {
     if (typeof funnelMeta === 'undefined') {
       throw new Error('Could not fetch the funnel. Perhaps it was deleted?')
     } else {
-      return api.get(
-        `/api/stats/${encodeURIComponent(site.domain)}/funnels/${funnelMeta.id}`,
-        dashboardState
-      )
+      return api.get(apiPath(site, `/funnels/${funnelMeta.id}`), dashboardState)
     }
   }
 
