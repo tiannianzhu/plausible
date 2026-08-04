@@ -789,12 +789,17 @@ defmodule PlausibleWeb.Live.Sites do
   end
 
   def favicon(assigns) do
-    src = PlausibleWeb.URL.path("favicon/sources/#{assigns.domain}")
+    fallback_src =
+      PlausibleWeb.URL.path("favicon/sources/#{URI.encode_www_form(assigns.domain)}") <> "?v=2"
 
-    assigns = assign(assigns, :src, src)
+    assigns = assign(assigns, favicon_src: fallback_src)
 
     ~H"""
-    <img src={@src} class="size-[18px] shrink-0" />
+    <img
+      src={@favicon_src}
+      class="size-[18px] shrink-0"
+      referrerpolicy="no-referrer"
+    />
     """
   end
 

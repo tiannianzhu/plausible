@@ -1,8 +1,19 @@
 defmodule PlausibleWeb.Favicon do
   @referer_domains_file "priv/referer_favicon_domains.json"
+  @cache_name :favicon
+  @favicon_names ~w(favicon.ico favicon.png favicon.svg apple-touch-icon.png)
+  @success_ttl :timer.hours(24)
+  @negative_ttl :timer.hours(1)
+  @max_favicon_size 2_000_000
+  @default_content_type "image/x-icon"
+
   @moduledoc """
-  A Plug that fetches favicon images from DuckDuckGo and returns them
-  to the Plausible frontend.
+  A Plug that resolves favicon images and returns them to the Plausible frontend.
+
+  Path-based sites are checked for a favicon under their configured path before
+  falling back to DuckDuckGo. Resolved responses are cached so the browser only
+  makes one request and the server does not repeat the external probes on every
+  page load.
 
   The proxying is there so we can reduce the number of third-party domains that
   the browser clients need to connect to. Our goal is to have 0 third-party domain
@@ -61,13 +72,17 @@ defmodule PlausibleWeb.Favicon do
       |> Jason.decode!()
       |> Map.merge(@custom_icons)
 
-    [favicon_domains: domains]
+    [
+      favicon_domains: domains,
+      favicon_fetcher: &Plausible.SSRF.get/1,
+      cache_name: @cache_name
+    ]
   end
 
   @ddg_broken_icon <<137, 80, 78, 71, 13, 10, 26, 10>>
   @doc """
-  Proxies HTTP request to DuckDuckGo favicon service. Swallows hop-by-hop HTTP
-  headers that should not be forwarded as defined in [RFC 2616](https://www.rfc-editor.org/rfc/rfc2616#section-13.5.1)
+  Resolves a favicon from the configured site path and then the DuckDuckGo
+  favicon service.
 
   ## Placeholder
 
@@ -102,7 +117,11 @@ defmodule PlausibleWeb.Favicon do
     use `<img src="https://plausible.io/favicon/sources/dummy.site"></img>`
 
   """
-  def call(conn, favicon_domains: favicon_domains) do
+  def call(conn, opts) do
+    favicon_domains = Keyword.fetch!(opts, :favicon_domains)
+    favicon_fetcher = Keyword.get(opts, :favicon_fetcher, &Plausible.SSRF.get/1)
+    cache_name = Keyword.get(opts, :cache_name, @cache_name)
+
     case conn.request_path do
       "/favicon/sources/placeholder" ->
         send_placeholder(conn)
@@ -110,49 +129,151 @@ defmodule PlausibleWeb.Favicon do
       "/favicon/sources/" <> domain ->
         domain = URI.decode_www_form(domain)
 
-        domain =
-          Map.get(favicon_domains, domain, domain)
-          |> String.split("/", parts: 2)
-          |> hd()
-
-        case HTTPClient.impl().get("https://icons.duckduckgo.com/ip3/#{domain}.ico") do
-          {:ok, %Finch.Response{status: 200, body: body, headers: headers}}
-          when body != @ddg_broken_icon ->
-            conn
-            |> forward_headers(headers)
-            |> maybe_override_content_type(body)
-            |> prevent_javascript_execution()
-            |> send_resp(200, body)
-            |> halt()
-
-          _ ->
-            send_placeholder(conn)
-        end
+        domain
+        |> cached_favicon(favicon_domains, favicon_fetcher, cache_name)
+        |> send_favicon(conn)
 
       _ ->
         conn
     end
   end
 
+  defp cached_favicon(domain, favicon_domains, favicon_fetcher, cache_name) do
+    source_domain = Map.get(favicon_domains, domain, domain)
+    resolver = fn -> resolve_favicon(source_domain, favicon_fetcher) end
+
+    if cache_available?(cache_name) do
+      Plausible.Cache.Adapter.get(cache_name, source_domain, fn ->
+        response = resolver.()
+        %ConCache.Item{value: response, ttl: response.ttl}
+      end)
+    else
+      resolver.()
+    end
+  end
+
+  defp cache_available?(cache_name) when is_atom(cache_name),
+    do: is_pid(Process.whereis(cache_name))
+
+  defp cache_available?(_cache_name), do: false
+
+  defp resolve_favicon(domain, favicon_fetcher) do
+    Enum.find_value(favicon_sources(domain), &fetch_direct_favicon(&1, favicon_fetcher)) ||
+      fetch_duckduckgo_favicon(domain)
+  end
+
+  defp favicon_sources(domain) do
+    case URI.parse("https://#{domain}") do
+      %URI{host: host, path: path, port: port} when is_binary(host) and host != "" ->
+        path = String.trim_trailing(path || "", "/")
+        authority = if port in [nil, 443], do: host, else: "#{host}:#{port}"
+        path_prefixes = if path == "", do: [""], else: [path, ""]
+
+        Enum.flat_map(path_prefixes, fn prefix ->
+          Enum.map(@favicon_names, fn name ->
+            "https://#{authority}#{prefix}/#{name}"
+          end)
+        end)
+
+      _ ->
+        []
+    end
+  end
+
+  defp fetch_direct_favicon(url, fetcher) do
+    case fetcher.(url) do
+      {:ok, %Req.Response{status: status, body: body} = response}
+      when status in 200..299 and is_binary(body) ->
+        if valid_direct_favicon?(response, body) do
+          content_type = response_content_type(response)
+
+          %{
+            body: body,
+            content_type: content_type,
+            secure?: svg_content_type?(content_type),
+            ttl: @success_ttl
+          }
+        end
+
+      _ ->
+        nil
+    end
+  rescue
+    _ -> nil
+  end
+
+  defp valid_direct_favicon?(response, body) do
+    byte_size(body) > 0 and byte_size(body) <= @max_favicon_size and
+      case Req.Response.get_header(response, "content-type") do
+        [] -> true
+        [content_type | _] -> String.starts_with?(String.downcase(content_type), "image/")
+      end
+  end
+
+  defp fetch_duckduckgo_favicon(domain) do
+    hostname = domain |> String.split("/", parts: 2) |> hd()
+
+    case HTTPClient.impl().get("https://icons.duckduckgo.com/ip3/#{hostname}.ico") do
+      {:ok, %Finch.Response{status: 200, body: body, headers: headers}}
+      when is_binary(body) and body != @ddg_broken_icon ->
+        content_type = ddg_content_type(body, headers)
+
+        %{
+          body: body,
+          content_type: content_type,
+          secure?: svg_content_type?(content_type),
+          ttl: @success_ttl
+        }
+
+      _ ->
+        placeholder_response()
+    end
+  end
+
+  defp response_content_type(response) do
+    case Req.Response.get_header(response, "content-type") do
+      [content_type | _] -> content_type
+      [] -> @default_content_type
+    end
+  end
+
+  defp ddg_content_type(body, headers) do
+    content_type = header_value(headers, "content-type") || @default_content_type
+
+    if String.starts_with?(body, "<svg"),
+      do: "image/svg+xml; charset=utf-8",
+      else: content_type
+  end
+
+  defp svg_content_type?(content_type),
+    do: String.starts_with?(String.downcase(content_type), "image/svg")
+
+  defp header_value(headers, name) do
+    Enum.find_value(headers, fn {key, value} ->
+      if String.downcase(key) == name, do: value
+    end)
+  end
+
+  defp placeholder_response do
+    %{body: @placeholder_icon, content_type: "image/svg+xml", secure?: false, ttl: @negative_ttl}
+  end
+
   defp send_placeholder(conn) do
+    placeholder_response() |> send_favicon(conn)
+  end
+
+  defp send_favicon(response, conn) do
+    conn =
+      conn
+      |> put_resp_header("content-type", response.content_type)
+      |> put_resp_header("cache-control", "public, max-age=#{div(response.ttl, 1000)}")
+
+    conn = if response.secure?, do: prevent_javascript_execution(conn), else: conn
+
     conn
-    |> put_resp_content_type("image/svg+xml")
-    |> put_resp_header("cache-control", "public, max-age=2592000")
-    |> send_resp(200, @placeholder_icon)
-    |> halt
+    |> send_resp(200, response.body)
+    |> halt()
   end
-
-  @forwarded_headers ["content-type", "cache-control", "expires"]
-  defp forward_headers(%Plug.Conn{} = conn, headers) do
-    headers_to_forward = Enum.filter(headers, fn {k, _} -> k in @forwarded_headers end)
-    %Plug.Conn{conn | resp_headers: headers_to_forward}
-  end
-
-  defp maybe_override_content_type(conn, "<svg" <> _rest) do
-    conn |> put_resp_content_type("image/svg+xml")
-  end
-
-  defp maybe_override_content_type(conn, _), do: conn
 
   defp prevent_javascript_execution(conn) do
     conn

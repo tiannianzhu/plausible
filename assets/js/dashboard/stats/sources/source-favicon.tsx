@@ -15,7 +15,7 @@ export const SourceFavicon = ({ name, className }: SourceFaviconProps) => {
   return (
     <img
       alt=""
-      src={withBasePath(`/favicon/sources/${encodeURIComponent(name)}`)}
+      src={withBasePath(`/favicon/sources/${encodeURIComponent(name)}?v=2`)}
       referrerPolicy="no-referrer"
       className={classNames(
         className,

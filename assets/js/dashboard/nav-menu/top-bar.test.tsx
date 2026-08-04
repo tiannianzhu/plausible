@@ -52,6 +52,10 @@ test('user can open and close site switcher', async () => {
     )
   })
 
+  expect(
+    screen.getByTestId('site-switcher-static').querySelector('img')
+  ).toHaveAttribute('src', '/favicon/sources/dummy.site?v=2')
+
   const toggleSiteSwitcher = screen.getByRole('button', { name: domain })
   await userEvent.click(toggleSiteSwitcher)
   expect(

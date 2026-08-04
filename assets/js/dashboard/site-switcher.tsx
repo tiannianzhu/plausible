@@ -27,20 +27,17 @@ const Favicon = ({
 }: {
   domain: string
   className?: string
-}) => (
-  <img
-    aria-hidden="true"
-    alt=""
-    src={withBasePath(`/favicon/sources/${encodeURIComponent(domain)}`)}
-    onError={(e) => {
-      const target = e.target as HTMLImageElement
-      target.onerror = null
-      target.src = withBasePath('/favicon/sources/placeholder')
-    }}
-    referrerPolicy="no-referrer"
-    className={className}
-  />
-)
+}) => {
+  return (
+    <img
+      aria-hidden="true"
+      alt=""
+      src={withBasePath(`/favicon/sources/${encodeURIComponent(domain)}?v=2`)}
+      referrerPolicy="no-referrer"
+      className={className}
+    />
+  )
+}
 
 const menuItemClassName = classNames(
   popover.items.classNames.navigationLink,
@@ -214,7 +211,10 @@ export const SiteSwitcher = () => {
             >
               <div className="flex">
                 {canSeeViewAllSites && (
-                  <a className={buttonLinkClassName} href={withBasePath('/sites')}>
+                  <a
+                    className={buttonLinkClassName}
+                    href={withBasePath('/sites')}
+                  >
                     <ArrowLeftIcon className="size-4 mr-1.5" />
                     Back to sites
                   </a>
